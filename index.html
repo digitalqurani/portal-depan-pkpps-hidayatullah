@@ -5,7 +5,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#123d2d">
+<meta name="description" content="Portal Terpadu PKPPS Hidayatullah Karimun. Layanan administrasi, jadwal KBM, absensi, monitoring, nilai, rapor, PPDB dan keuangan.">
 <title>Portal Terpadu | PKPPS Hidayatullah Karimun</title>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#f4f7f4;color:#183528;line-height:1.6}
@@ -14,6 +16,7 @@ header{background:#123d2d;color:white;padding:12px 6%;display:flex;justify-conte
 .brand img{width:58px;height:58px;object-fit:contain;border-radius:50%;background:white}
 .brand small{display:block;font-size:11px;color:#e3c878}
 .btn{display:inline-block;background:#d7b66a;color:#183528;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold}
+.btn:hover{background:#ebcd82;transform:translateY(-2px)}
 .hero{background:linear-gradient(120deg,#103727,#28674c);color:white;padding:76px 7%}
 .hero h1{font-size:clamp(34px,5vw,54px);line-height:1.15;margin:14px 0}
 .hero p{max-width:680px;color:#e1ece4;font-size:17px;margin-bottom:25px}
@@ -23,30 +26,52 @@ section{padding:60px 7%}
 .heading h2{font-size:32px}
 .heading p{color:#64756b}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.card{background:white;padding:23px;border-radius:13px;border:1px solid #e4ebe5}
+.card{
+  display:block;
+  background:white;
+  padding:23px;
+  border-radius:13px;
+  border:1px solid #e4ebe5;
+  text-decoration:none;
+  color:#183528;
+  cursor:pointer;
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.card:hover{
+  transform:translateY(-5px);
+  box-shadow:0 9px 24px rgba(18,61,45,.12);
+  border-color:#28674c;
+}
 .card h3{margin-top:0}
 .card p{font-size:14px;color:#65746b}
+.card .link-label{display:inline-block;margin-top:10px;color:#1d6047;font-weight:bold;font-size:13px}
 .access{background:#e8f0e9}
 .access-box{background:#123d2d;color:white;padding:28px;border-radius:15px;display:flex;justify-content:space-between;align-items:center;gap:20px}
 .access-box p{color:#dce8df}
 footer{background:#0d2b20;color:#dce8df;padding:24px 7%;font-size:13px}
+a:focus-visible{outline:3px solid #d7b66a;outline-offset:4px}
 @media(max-width:700px){
-.cards{grid-template-columns:1fr}
-.access-box{display:block}
-.access-box .btn{margin-top:14px}
-header{flex-wrap:wrap}
-.hero{padding:55px 7%}
-.brand img{width:50px;height:50px}
+  .cards{grid-template-columns:1fr}
+  .access-box{display:block}
+  .access-box .btn{margin-top:14px}
+  header{flex-wrap:wrap}
+  .hero{padding:55px 7%}
+  .brand img{width:50px;height:50px}
 }
 </style>
 </head>
+
 <body>
 <header>
   <div class="brand">
     <img src="logo-hidayatullah-karimun.png" alt="Logo PKPPS Hidayatullah Karimun">
-    <span>HIDAYATULLAH<small>KARIMUN · PORTAL TERPADU</small></span>
+    <span>HIDAYATULLAH
+      <small>KARIMUN · PORTAL TERPADU</small>
+    </span>
   </div>
-  <a class="btn" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">MASUK PORTAL ↗</a>
+  <a class="btn" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">
+    MASUK PORTAL ↗
+  </a>
 </header>
 
 <main>
@@ -54,7 +79,9 @@ header{flex-wrap:wrap}
   <div class="eyebrow">SISTEM INFORMASI PENDIDIKAN</div>
   <h1>Portal Terpadu<br>PKPPS Hidayatullah Karimun</h1>
   <p>Satu pintu layanan digital untuk mendukung pengelolaan administrasi, kegiatan belajar mengajar, data pendidikan, dan pemantauan aktivitas pesantren.</p>
-  <a class="btn" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">MASUK PORTAL →</a>
+  <a class="btn" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">
+    MASUK PORTAL →
+  </a>
 </div>
 
 <section>
@@ -63,13 +90,45 @@ header{flex-wrap:wrap}
     <h2>Semua Layanan dalam Satu Portal</h2>
     <p>Portal untuk membantu koordinasi dan pencatatan kegiatan pendidikan.</p>
   </div>
+
   <div class="cards">
-    <div class="card"><h3>▦ Administrasi &amp; Data</h3><p>Pengelolaan pengguna, data guru, data santri, kelas, dan wali kelas.</p></div>
-    <div class="card"><h3>◷ Jadwal &amp; Absensi KBM</h3><p>Akses jadwal mengajar, absensi guru, dan jurnal kegiatan belajar mengajar.</p></div>
-    <div class="card"><h3>▤ Monitoring &amp; Laporan</h3><p>Pemantauan pelaksanaan KBM dan laporan absensi.</p></div>
-    <div class="card"><h3>✎ Nilai &amp; Rapor</h3><p>Pengelolaan nilai pembelajaran dan data rapor.</p></div>
-    <div class="card"><h3>◎ PPDB</h3><p>Dukungan pengelolaan pendaftaran calon santri baru.</p></div>
-    <div class="card"><h3>◇ Layanan Keuangan</h3><p>Pencatatan tagihan, pembayaran, dan pengeluaran.</p></div>
+
+    <a class="card" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">
+      <h3>▦ Administrasi &amp; Data</h3>
+      <p>Pengelolaan pengguna, data guru, data santri, kelas, dan wali kelas.</p>
+      <span class="link-label">Buka Layanan →</span>
+    </a>
+
+    <a class="card" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">
+      <h3>◷ Jadwal &amp; Absensi KBM</h3>
+      <p>Akses jadwal mengajar, absensi guru, dan jurnal kegiatan belajar mengajar.</p>
+      <span class="link-label">Buka Layanan →</span>
+    </a>
+
+    <a class="card" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">
+      <h3>▤ Monitoring &amp; Laporan</h3>
+      <p>Pemantauan pelaksanaan KBM dan laporan absensi.</p>
+      <span class="link-label">Buka Layanan →</span>
+    </a>
+
+    <a class="card" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">
+      <h3>✎ Nilai &amp; Rapor</h3>
+      <p>Pengelolaan nilai pembelajaran dan data rapor.</p>
+      <span class="link-label">Buka Layanan →</span>
+    </a>
+
+    <a class="card" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=ppdb">
+      <h3>◎ PPDB</h3>
+      <p>Dukungan pengelolaan pendaftaran calon santri baru.</p>
+      <span class="link-label">Daftar Sekarang →</span>
+    </a>
+
+    <a class="card" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">
+      <h3>◇ Layanan Keuangan</h3>
+      <p>Pencatatan tagihan, pembayaran, dan pengeluaran.</p>
+      <span class="link-label">Buka Layanan →</span>
+    </a>
+
   </div>
 </section>
 
@@ -79,7 +138,9 @@ header{flex-wrap:wrap}
       <h2>Siap menggunakan Portal Terpadu?</h2>
       <p>Gunakan username dan PIN akun Anda untuk melanjutkan ke halaman login.</p>
     </div>
-    <a class="btn" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">MASUK PORTAL SEKARANG →</a>
+    <a class="btn" href="https://script.google.com/macros/s/AKfycbyFhZam1WtoEPirGc7NACaCXfOguFqyD6jp-OueisSElmzt4A_bpqsr5svNwmC6MIY53Q/exec?page=portal">
+      MASUK PORTAL SEKARANG →
+    </a>
   </div>
 </section>
 </main>
