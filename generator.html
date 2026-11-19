@@ -9,7 +9,12 @@
   <h2>Generator Soal AI</h2><p class="muted">Pilih cara kerja sesuai kebutuhan. Guru dapat memasukkan materi saja atau menentukan kisi-kisi secara rinci.</p>
   <div class="modebar noprint"><button id="modeMateriBtn" class="active" type="button" onclick="setMode('materi')">Mode Materi</button><button id="modeKisiBtn" type="button" onclick="setMode('kisi-kisi')">Mode Kisi-Kisi</button></div>
   <div class="grid">
-   <label>Mata Pelajaran<input id="mapel" placeholder="Contoh: Nahwu"></label>
+   <label>Mata Pelajaran
+      <select id="mapel" required>
+       <option value="">Memuat mata pelajaran dari Jadwal KBM...</option>
+      </select>
+      <input id="mapelLainnya" class="hidden" placeholder="Ketik nama mata pelajaran" aria-label="Mata pelajaran lainnya">
+    </label>
    <label>Program<select id="program"><option>Wustho</option><option>Ulya</option><option>Ula</option></select></label>
    <label>Kelas<select id="kelas"><option>Kelas 7</option><option>Kelas 8</option><option>Kelas 9</option><option>Kelas 10</option><option>Kelas 11</option><option>Kelas 12</option></select></label>
    <label>Jenis Ujian<select id="ujian"><option>Ujian Semester</option><option>Penilaian Tengah Semester</option><option>Penilaian Akhir Semester</option><option>Ulangan Harian</option><option>Latihan</option></select></label>
@@ -45,21 +50,62 @@
  <section id="historyPanel" class="panel noprint"><h3 style="margin-top:0">Bank Soal Saya</h3><p class="muted">Riwayat soal yang pernah disimpan oleh akun ini.</p><div id="history" class="muted">Memuat...</div></section>
 </div>
 <script>
-const TOKEN = new URLSearchParams(location.search).get('token') || '';
+const TOKEN = <?!= JSON.stringify(INITIAL_TOKEN || '') ?>;
 let MODE='materi', LAST_RESULT=null, BLUEPRINT=[];
-async function callServer(name,...args){const r=await fetch('/api/portal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:name,args})});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'Permintaan gagal.');return j.data;}
+function callServer(name,...args){return new Promise((resolve,reject)=>{const r=google.script.run.withSuccessHandler(resolve).withFailureHandler(e=>reject(new Error(e&&e.message?e.message:String(e))));r[name](...args);});}
+const MAPEL_FALLBACK = ['Al-Qur\'an','Hadits','Tafsir','Akidah Akhlak','Fiqih','Ushul Fiqih','Nahwu','Sharaf','Balaghah','Bahasa Arab','Bahasa Inggris','Matematika','IPA','IPS','Sejarah','Pendidikan Pancasila','Informatika','Tahfidzul Qur\'an'];
+function mapelValue(){
+ const selected=document.getElementById('mapel').value;
+ return selected==='__LAINNYA__' ? document.getElementById('mapelLainnya').value.trim() : selected;
+}
+function handleMapelChange(){
+ const other=document.getElementById('mapelLainnya');
+ const isOther=document.getElementById('mapel').value==='__LAINNYA__';
+ other.classList.toggle('hidden',!isOther);
+ other.required=isOther;
+ if(isOther) other.focus();
+}
+async function loadMapelOptions(){
+ const select=document.getElementById('mapel');
+ select.innerHTML='<option value="">Memuat mata pelajaran...</option>';
+ try{
+  const data=await callServer('getPortalScheduleData',TOKEN);
+  const fromSchedule=(data&&Array.isArray(data.schedules)?data.schedules:[])
+    .map(x=>String(x.mapel||'').trim()).filter(Boolean);
+  const subjects=[...new Set(fromSchedule)].sort((a,b)=>a.localeCompare(b,'id'));
+  const options=subjects.length?subjects:MAPEL_FALLBACK;
+  select.innerHTML='<option value="">Pilih mata pelajaran</option>'+
+    options.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+
+    '<option value="__LAINNYA__">Lainnya (ketik sendiri)</option>';
+  select.dataset.source=subjects.length?'jadwal':'fallback';
+  if(!subjects.length) {
+    const note=document.createElement('small');
+    note.className='muted';
+    note.id='mapelSourceNote';
+    note.textContent='Belum ada mata pelajaran pada Jadwal KBM yang dapat dibaca. Ditampilkan daftar umum sementara.';
+    select.parentElement.appendChild(note);
+  }
+ }catch(err){
+  select.innerHTML='<option value="">Pilih mata pelajaran</option>'+
+    MAPEL_FALLBACK.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('')+
+    '<option value="__LAINNYA__">Lainnya (ketik sendiri)</option>';
+  select.dataset.source='fallback';
+ }
+ select.addEventListener('change',handleMapelChange);
+}
+
 function setMode(mode){MODE=mode;document.getElementById('modeMateriBtn').classList.toggle('active',mode==='materi');document.getElementById('modeKisiBtn').classList.toggle('active',mode==='kisi-kisi');document.getElementById('kisiSection').classList.toggle('hidden',mode!=='kisi-kisi');document.getElementById('materiModeNote').classList.toggle('hidden',mode!=='materi');document.getElementById('countHeading').textContent=mode==='materi'?'2. Tentukan Jumlah Soal':'3. Rekap Jumlah Soal';}
 function addBlueprintRow(data={}){BLUEPRINT.push({indikator:data.indikator||'',level:data.level||'C2',bentuk:data.bentuk||'PG',jumlah:Number(data.jumlah||1)});renderBlueprint();}
 function renderBlueprint(){const body=document.getElementById('blueprintRows');body.innerHTML=BLUEPRINT.map((x,i)=>`<tr><td><input aria-label="Indikator ${i+1}" value="${esc(x.indikator)}" oninput="BLUEPRINT[${i}].indikator=this.value" placeholder="Contoh: Menentukan isim"></td><td><select onchange="BLUEPRINT[${i}].level=this.value">${['C1','C2','C3','C4','C5','C6'].map(v=>`<option ${v===x.level?'selected':''}>${v}</option>`).join('')}</select></td><td><select onchange="BLUEPRINT[${i}].bentuk=this.value">${[['PG','Pilihan Ganda'],['BS','Benar/Salah'],['ISIAN','Isian'],['URAIAN','Uraian']].map(v=>`<option value="${v[0]}" ${v[0]===x.bentuk?'selected':''}>${v[1]}</option>`).join('')}</select></td><td><input type="number" min="1" max="60" value="${x.jumlah}" onchange="BLUEPRINT[${i}].jumlah=Math.max(1,Number(this.value)||1);renderBlueprint()"></td><td><button class="danger" type="button" onclick="BLUEPRINT.splice(${i},1);renderBlueprint()">Hapus</button></td></tr>`).join('');const total=BLUEPRINT.reduce((n,x)=>n+Number(x.jumlah||0),0);document.getElementById('blueprintTotal').textContent='Total kisi-kisi: '+total;}
 function counts(){return {PG:num('countPG'),BS:num('countBS'),ISIAN:num('countISIAN'),URAIAN:num('countURAIAN')}}function num(id){return Math.max(0,Number(document.getElementById(id).value)||0)}function updateTotal(){const c=counts();document.getElementById('totalCount').textContent=Object.values(c).reduce((a,b)=>a+b,0)}
 ['countPG','countBS','countISIAN','countURAIAN'].forEach(id=>document.getElementById(id).addEventListener('input',updateTotal));
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function payload(){const c=counts();return {mode:MODE,materi:document.getElementById('materi').value,mapel:document.getElementById('mapel').value,program:document.getElementById('program').value,kelas:document.getElementById('kelas').value,ujian:document.getElementById('ujian').value,tingkat:document.getElementById('tingkat').value,bahasa:document.getElementById('bahasa').value,durasi:document.getElementById('durasi').value,instruksi:document.getElementById('instruksi').value,pilihanGanda:c.PG,benarSalah:c.BS,isian:c.ISIAN,uraian:c.URAIAN,kisiKisi:BLUEPRINT};}
+function payload(){const c=counts();return {mode:MODE,materi:document.getElementById('materi').value,mapel:mapelValue(),program:document.getElementById('program').value,kelas:document.getElementById('kelas').value,ujian:document.getElementById('ujian').value,tingkat:document.getElementById('tingkat').value,bahasa:document.getElementById('bahasa').value,durasi:document.getElementById('durasi').value,instruksi:document.getElementById('instruksi').value,pilihanGanda:c.PG,benarSalah:c.BS,isian:c.ISIAN,uraian:c.URAIAN,kisiKisi:BLUEPRINT};}
 async function generate(){const status=document.getElementById('status'),btn=document.getElementById('generateBtn');status.className='status';status.textContent='Memeriksa input...';const p=payload(),total=p.pilihanGanda+p.benarSalah+p.isian+p.uraian;if(p.materi.trim().length<30){status.className='status error';status.textContent='Materi minimal 30 karakter.';return}if(!p.mapel.trim()){status.className='status error';status.textContent='Mata pelajaran wajib diisi.';return}if(!total||total>60){status.className='status error';status.textContent='Jumlah soal harus 1–60 butir.';return}if(MODE==='kisi-kisi'){const bt=BLUEPRINT.reduce((n,x)=>n+Number(x.jumlah||0),0);if(!BLUEPRINT.length||BLUEPRINT.some(x=>!x.indikator.trim())){status.className='status error';status.textContent='Lengkapi minimal satu indikator kisi-kisi.';return}if(bt!==total){status.className='status error';status.textContent=`Total kisi-kisi (${bt}) harus sama dengan jumlah soal (${total}).`;return}const by={PG:0,BS:0,ISIAN:0,URAIAN:0};BLUEPRINT.forEach(x=>by[x.bentuk]+=Number(x.jumlah));if(Object.keys(by).some(k=>by[k]!==({PG:p.pilihanGanda,BS:p.benarSalah,ISIAN:p.isian,URAIAN:p.uraian})[k])){status.className='status error';status.textContent='Jumlah per bentuk soal pada kisi-kisi harus sama dengan rekap jumlah soal.';return}}
 btn.disabled=true;btn.textContent='AI sedang menyusun soal...';status.textContent='AI sedang membaca materi dan menyusun kisi-kisi serta soal. Mohon tunggu.';try{LAST_RESULT=await callServer('generateSoalAI',TOKEN,p);renderResult(LAST_RESULT);document.getElementById('resultPanel').classList.remove('hidden');status.textContent='Berhasil! Periksa kisi-kisi dan soal sebelum dicetak.';document.getElementById('resultPanel').scrollIntoView({behavior:'smooth'});}catch(e){status.className='status error';status.textContent='Gagal membuat soal: '+e.message;}finally{btn.disabled=false;btn.textContent='✨ Buat Soal dengan AI';}}
 function renderResult(r){const meta=r.meta||{},blue=r.kisiKisi||[];let html=`<div class="printonly"><h2 style="text-align:center">PKPPS HIDAYATULLAH KARIMUN</h2><p style="text-align:center">${esc(meta.ujian||'Evaluasi Pembelajaran')}</p><hr></div><h2>${esc(r.judul)}</h2><p class="muted">Mata Pelajaran: ${esc(meta.mapel)} · Program: ${esc(meta.program)} · Kelas: ${esc(meta.kelas)} · Durasi: ${esc(meta.durasi)} menit</p><p>${esc(r.petunjuk||'')}</p><h3>Kisi-Kisi / Distribusi Soal</h3><div class="tablewrap"><table><thead><tr><th>No.</th><th>Indikator</th><th>Level</th><th>Bentuk</th><th>Jumlah</th></tr></thead><tbody>${blue.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.indikator)}</td><td>${esc(x.level)}</td><td>${esc(x.bentuk)}</td><td>${esc(x.jumlah)}</td></tr>`).join('')||'<tr><td colspan="5">Kisi-kisi tidak tersedia.</td></tr>'}</tbody></table></div><h3>Soal</h3>`;r.soal.forEach((q,i)=>{html+=`<div class="question"><div class="qmeta">Nomor ${i+1} · ${esc(q.jenis)} · ${esc(q.level||'')} ${q.indikator?'· '+esc(q.indikator):''}</div><b>${i+1}. ${esc(q.pertanyaan)}</b>`;if(q.jenis==='PG')html+=`<p>A. ${esc(q.opsi.A)}<br>B. ${esc(q.opsi.B)}<br>C. ${esc(q.opsi.C)}<br>D. ${esc(q.opsi.D)}</p>`;html+=`<div class="key"><b>Kunci:</b> ${esc(q.jawaban)}${q.pembahasan?`<br><b>Pembahasan:</b> ${esc(q.pembahasan)}`:''}<br><b>Skor:</b> ${esc(q.skor)}</div></div>`});document.getElementById('result').innerHTML=html;}
 async function saveBank(){if(!LAST_RESULT)return;try{const r=await callServer('saveSoalAIBank',TOKEN,{result:LAST_RESULT});alert(r.message+' ID: '+r.id);loadHistory();}catch(e){alert('Gagal menyimpan: '+e.message)}}
 async function loadHistory(){const el=document.getElementById('history');try{const r=await callServer('getGeneratorSoalData',TOKEN);const rows=r.saved||[];el.innerHTML=rows.length?`<div class="tablewrap"><table><thead><tr><th>Waktu</th><th>Mapel</th><th>Program</th><th>Kelas</th><th>Jenis Ujian</th><th>Judul</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.waktu)}</td><td>${esc(x.mapel)}</td><td>${esc(x.program)}</td><td>${esc(x.kelas)}</td><td>${esc(x.jenis)}</td><td>${esc(x.judul)}</td></tr>`).join('')}</tbody></table></div>`:'Belum ada soal yang disimpan.';}catch(e){el.textContent='Riwayat belum dapat dimuat: '+e.message}}
-function resetForm(){['materi','mapel','instruksi'].forEach(id=>document.getElementById(id).value='');BLUEPRINT=[];renderBlueprint();LAST_RESULT=null;document.getElementById('resultPanel').classList.add('hidden');document.getElementById('status').textContent='';}
-addBlueprintRow({indikator:'Mengidentifikasi konsep utama pada materi',level:'C1',bentuk:'PG',jumlah:10});addBlueprintRow({indikator:'Menjelaskan dan menerapkan konsep pada contoh',level:'C2',bentuk:'BS',jumlah:5});addBlueprintRow({indikator:'Menganalisis contoh berdasarkan kaidah',level:'C3',bentuk:'ISIAN',jumlah:5});updateTotal();loadHistory();
+function resetForm(){['materi','instruksi','mapelLainnya'].forEach(id=>document.getElementById(id).value='');document.getElementById('mapel').value='';document.getElementById('mapelLainnya').classList.add('hidden');BLUEPRINT=[];renderBlueprint();LAST_RESULT=null;document.getElementById('resultPanel').classList.add('hidden');document.getElementById('status').textContent='';}
+addBlueprintRow({indikator:'Mengidentifikasi konsep utama pada materi',level:'C1',bentuk:'PG',jumlah:10});addBlueprintRow({indikator:'Menjelaskan dan menerapkan konsep pada contoh',level:'C2',bentuk:'BS',jumlah:5});addBlueprintRow({indikator:'Menganalisis contoh berdasarkan kaidah',level:'C3',bentuk:'ISIAN',jumlah:5});updateTotal();loadHistory();loadMapelOptions();
 </script></body></html>
