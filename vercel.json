@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/portal",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/ppdb",
+      "destination": "/ppdb.html"
+    },
+    {
+      "source": "/generator",
+      "destination": "/generator.html"
+    }
+  ]
+}
