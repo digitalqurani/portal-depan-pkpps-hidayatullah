@@ -167,12 +167,24 @@
 </div></main></div></div></div>
 <script>
 let TOKEN='',DATA=null,USERS=[],CLASS_MONITOR_TIMER=null;
+// V1.42: diagnostik waktu API. Tidak mengubah payload, hasil, atau alur penyimpanan.
+const PORTAL_API_METRICS = [];
 async function call(fn,...args){
- const response=await fetch('/api/portal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:fn,args})});
- let result;try{result=await response.json()}catch(e){throw new Error('Respons server tidak valid. Periksa konfigurasi GAS_WEB_APP_URL.')}
- if(!response.ok||!result||result.ok!==true)throw new Error(result&&result.error?result.error:'Permintaan ke server gagal.');
- return result.data;
+ const started=performance.now();
+ try {
+  const response=await fetch('/api/portal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:fn,args})});
+  let result;try{result=await response.json()}catch(e){throw new Error('Respons server tidak valid. Periksa konfigurasi GAS_WEB_APP_URL.')}
+  if(!response.ok||!result||result.ok!==true)throw new Error(result&&result.error?result.error:'Permintaan ke server gagal.');
+  return result.data;
+ } finally {
+  const elapsed=Math.round(performance.now()-started);
+  const metric={action:fn,ms:elapsed,at:new Date().toISOString()};
+  PORTAL_API_METRICS.push(metric); if(PORTAL_API_METRICS.length>200)PORTAL_API_METRICS.shift();
+  console.debug('[Portal API V1.42]',fn,elapsed+' ms');
+ }
 }
+window.getPortalApiMetrics=()=>PORTAL_API_METRICS.slice();
+window.clearPortalApiMetrics=()=>{PORTAL_API_METRICS.length=0;};
 async function prosesLoginPortal(){document.getElementById('err').textContent='Memeriksa akun...';try{const r=await call('loginPortal',document.getElementById('username').value,document.getElementById('pin').value);TOKEN=r.token;let chosen=r.user.peran;if(r.roles&&r.roles.length>1){const answer=prompt('Akun ini memiliki beberapa peran: '+r.roles.join(', ')+'\nKetik peran yang ingin digunakan:',r.user.peran);if(answer===null){await call('logoutPortal',TOKEN);TOKEN='';return;}chosen=answer.trim().toUpperCase();if(!r.roles.includes(chosen)){document.getElementById('err').textContent='Peran tidak sesuai dengan akun.';await call('logoutPortal',TOKEN);TOKEN='';return;}await call('activatePortalRole',TOKEN,chosen);}DATA=await call('getPortalDashboard',TOKEN);render();document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden')}catch(e){document.getElementById('err').textContent=e.message}}
 window.prosesLoginPortal=prosesLoginPortal;
 function render(){
