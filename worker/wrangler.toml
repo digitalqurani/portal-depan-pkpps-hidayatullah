@@ -1,0 +1,11 @@
+name = "pkpps-ai-video-gateway"
+main = "src/index.js"
+compatibility_date = "2026-11-23"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pkpps-ai-video"
+database_id = "ISI_DATABASE_ID_DARI_CLOUDFLARE"
+
+[vars]
+FAL_MODEL_ID = "fal-ai/wan/v2.7/text-to-video"

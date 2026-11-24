@@ -202,6 +202,9 @@ function render(){
  if(['ADMIN','TU','GURU'].includes(role)){
   document.getElementById('nav').innerHTML += '<button onclick=\"openGeneratorSoalAI()\">✦ Generator Soal AI</button>';
  }
+ if(['ADMIN','TU','GURU'].includes(role)){
+  document.getElementById('nav').innerHTML += '<button onclick="showModule(\'AI Video Studio\')">▣ AI Video Studio</button>';
+ }
  if(role==='ADMIN'){
   const menuNames=(DATA.menus||[]).map(x=>String(x).trim().toLowerCase());
   if(!menuNames.includes('monitoring kbm'))document.getElementById('nav').innerHTML+=`<button onclick="showModule('Monitoring KBM')">Monitoring KBM</button>`;
@@ -245,6 +248,11 @@ function showModule(m){
   classPanel.classList.add('hidden');
   gradePanel.classList.add('hidden');
   cards.innerHTML='';
+
+  if(moduleName.toLowerCase()==='ai video studio' && ['ADMIN','TU','GURU'].includes(role)){
+    loadAiVideoStudio();
+    return;
+  }
 
   if(moduleName.toLowerCase()==='ppdb' && ['ADMIN','TU'].includes(role)){ppdbPanel.classList.remove('hidden');loadPpdbAdmin();return;}
   if(moduleName.toLowerCase()==='kelas & wali kelas' && role==='ADMIN'){classPanel.classList.remove('hidden');loadClassManagement();return;}
@@ -1203,6 +1211,75 @@ async function copyWaNoticeDraft(){
   el=document.getElementById('waNoticeMessage');
   try{await navigator.clipboard.writeText(el.value);document.getElementById('waNoticeStatus').textContent='Pesan berhasil disalin. Tempelkan ke grup WhatsApp guru.';}
   catch(e){el.focus();el.select();document.execCommand('copy');document.getElementById('waNoticeStatus').textContent='Pesan disalin. Tempelkan ke grup WhatsApp guru.';}
+}
+
+
+/* ===== AI VIDEO STUDIO – integrasi tahap awal ===== */
+function loadAiVideoStudio(){
+  const cards=document.getElementById('cards');
+  cards.innerHTML=`
+    <div class="card" style="grid-column:1/-1">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><h3 style="margin:0">AI Video Production Studio</h3>
+        <p class="muted">Buat video dari prompt menggunakan provider fal.ai. Fitur masih tahap pengujian.</p></div>
+        <span class="muted">Provider: fal.ai · Beta</span>
+      </div>
+      <label for="videoPrompt"><b>Deskripsi video (prompt)</b></label>
+      <textarea id="videoPrompt" rows="5" maxlength="4000" style="width:100%;padding:12px;border:1px solid #cbd8d2;border-radius:8px;margin:8px 0" placeholder="Contoh: Video sinematik suasana pesantren saat santri membaca Al-Qur'an di pagi hari..."></textarea>
+      <div class="toolbar">
+        <label>Durasi
+          <select id="videoDuration"><option value="5">5 detik</option><option value="10">10 detik</option></select>
+        </label>
+        <label>Rasio
+          <select id="videoRatio"><option value="16:9">16:9 – Landscape</option><option value="9:16">9:16 – Portrait</option><option value="1:1">1:1 – Square</option></select>
+        </label>
+      </div>
+      <div class="toolbar">
+        <button type="button" onclick="submitAiVideoJob()">Buat Video</button>
+        <button type="button" onclick="refreshAiVideoJob()">Periksa Status</button>
+      </div>
+      <p id="videoStudioStatus" class="muted">Masukkan prompt untuk memulai pengujian. Permintaan akan menggunakan kredit fal.ai.</p>
+      <div id="videoStudioResult"></div>
+    </div>`;
+}
+let AI_VIDEO_CURRENT_JOB='';
+async function submitAiVideoJob(){
+  const status=document.getElementById('videoStudioStatus');
+  const prompt=String(document.getElementById('videoPrompt')?.value||'').trim();
+  if(prompt.length<8){status.textContent='Prompt minimal 8 karakter.';return;}
+  status.textContent='Mengirim permintaan ke AI Video Gateway...';
+  try{
+    const response=await fetch('/api/video',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},
+      body:JSON.stringify({action:'create',prompt,
+        duration:Number(document.getElementById('videoDuration').value),
+        aspect_ratio:document.getElementById('videoRatio').value})
+    });
+    const result=await response.json();
+    if(!response.ok||!result.ok)throw new Error(result.error||'Permintaan video gagal.');
+    AI_VIDEO_CURRENT_JOB=result.data.id;
+    status.textContent='Permintaan diterima. ID pekerjaan: '+AI_VIDEO_CURRENT_JOB+' · Status: '+result.data.status;
+    document.getElementById('videoStudioResult').innerHTML='<p class="muted">Pekerjaan masuk antrean. Tekan “Periksa Status” untuk melihat perkembangannya.</p>';
+  }catch(e){status.textContent='Gagal: '+(e.message||e);}
+}
+async function refreshAiVideoJob(){
+  const status=document.getElementById('videoStudioStatus');
+  if(!AI_VIDEO_CURRENT_JOB){status.textContent='Belum ada pekerjaan video pada sesi ini.';return;}
+  status.textContent='Memeriksa status...';
+  try{
+    const response=await fetch('/api/video?jobId='+encodeURIComponent(AI_VIDEO_CURRENT_JOB),{
+      method:'GET',headers:{'Authorization':'Bearer '+TOKEN}
+    });
+    const result=await response.json();
+    if(!response.ok||!result.ok)throw new Error(result.error||'Gagal memeriksa status.');
+    const job=result.data;
+    status.textContent='Status pekerjaan: '+job.status+(job.errorMessage?' · '+job.errorMessage:'');
+    if(job.outputUrl && /^https:\/\/[^\s"'<>]+$/i.test(String(job.outputUrl))){
+      const url=String(job.outputUrl);
+      document.getElementById('videoStudioResult').innerHTML='<video controls playsinline style="width:100%;max-width:760px;border-radius:12px;background:#111" src="'+url+'"></video><p><a href="'+url+'" target="_blank" rel="noopener">Buka hasil video</a></p>';
+    }
+  }catch(e){status.textContent='Gagal: '+(e.message||e);}
 }
 
 </script></body></html>
