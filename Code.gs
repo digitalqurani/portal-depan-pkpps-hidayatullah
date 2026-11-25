@@ -2569,6 +2569,7 @@ function doPost(e) {
     'getSavedSoalAI',
     'getTahfidzPortalData',
     'getTeacherKbmData',
+    'getVideoStudioIdentity',
     'getWeeklyReport',
     'installDailyWhatsAppDraftTrigger',
     'koreksiAbsensiAdminPortal',
@@ -2790,4 +2791,24 @@ function savePortalSettings(token,settings){
   const allowed=['NAMA_LEMBAGA','TAHUN_AJARAN','LOGO_URL','KEPALA_PKPPS','KEPALA_WUSTHO','KEPALA_ULYA'];const ss=SpreadsheetApp.getActive();let sh=ss.getSheetByName('PENGATURAN');if(!sh){sh=ss.insertSheet('PENGATURAN');sh.appendRow(['Kunci','Nilai']);}
   const v=sh.getDataRange().getDisplayValues(),map={};v.slice(1).forEach((r,i)=>{if(r[0])map[String(r[0]).trim()]=i+2;});settings=settings||{};
   allowed.forEach(k=>{if(settings[k]===undefined)return;const row=map[k]||sh.getLastRow()+1;if(!map[k])sh.getRange(row,1).setValue(k);sh.getRange(row,2).setValue(String(settings[k]||''));});return {ok:true,message:'Pengaturan lembaga berhasil disimpan.'};
+}
+
+
+/* ===== AI VIDEO STUDIO: identity bridge =====
+ * Dipanggil oleh backend video untuk memvalidasi sesi Portal yang sudah ada.
+ * Tidak membuat sistem login baru dan tidak mengirim PIN/hash ke layanan lain.
+ */
+function getVideoStudioIdentity(token) {
+  const user = getPortalSession_(token);
+  const role = String(user.peran || '').trim().toUpperCase();
+  if (!['ADMIN', 'TU', 'GURU'].includes(role)) {
+    throw new Error('Akses AI Video Studio hanya tersedia untuk ADMIN, TU, dan GURU.');
+  }
+  return {
+    id: String(user.id || user.username || ''),
+    username: String(user.username || ''),
+    name: String(user.nama || ''),
+    role: role,
+    organizationId: 'pkpps-hidayatullah-karimun'
+  };
 }
